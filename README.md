@@ -36,11 +36,11 @@ Each payload needs a `Codec` for serialization and a `Schema` for MSMP discovery
 ```java
 public record PingPayload(String message) {
 
-    public static final Codec CODEC = RecordCodecBuilder.create(i -> i.group(
+    public static final Codec<PingPayload> CODEC = RecordCodecBuilder.create(i -> i.group(
         Codec.STRING.fieldOf("message").forGetter(PingPayload::message)
     ).apply(i, PingPayload::new));
 
-    public static final Schema SCHEMA = Schema.record(CODEC)
+    public static final Schema<PingPayload> SCHEMA = Schema.record(CODEC)
         .withField("message", Schema.STRING_SCHEMA);
 }
 ```
@@ -54,7 +54,7 @@ Use `namespace()` to register methods and notifications, and `send()` to broadca
 public class MyMod implements ModInitializer {
 
     private static MsmpServer msmp;
-    private static MsmpNotification ping;
+    private static MsmpNotification<PingPayload> ping;
 
     @Override
     public void onInitialize() {
@@ -69,7 +69,10 @@ public class MyMod implements ModInitializer {
                     EchoPayload.SCHEMA,
                     EchoPayload.SCHEMA,
                     "Echoes a message back to the client",
-                    (srv, params) -> params
+                    (server, params, client) -> {
+                        System.out.println("Called by connection: " + client.connectionId());
+                        return params;
+                    }
                 );
         });
 
@@ -84,6 +87,16 @@ public class MyMod implements ModInitializer {
     }
 }
 ```
+
+### Handler parameters
+
+The method handler receives three parameters:
+
+| Parameter | Type | Description |
+|---|---|---|
+| `server` | `MinecraftServer` | The running Minecraft server instance |
+| `params` | `Param` | The payload received from the client |
+| `client` | `ClientInfo` | Info about the calling client, including `connectionId()` |
 
 ### JSON-RPC examples
 

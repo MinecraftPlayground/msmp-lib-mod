@@ -3,9 +3,6 @@ package dev.loat.msmp;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.jsonrpc.api.Schema;
 
-import java.util.function.BiFunction;
-
-
 /**
  * Represents a custom MSMP namespace under which methods and notifications can be registered.
  *
@@ -14,11 +11,11 @@ import java.util.function.BiFunction;
  *
  * <pre>{@code
  * msmp.namespace("my_mod")
- *     .method("get_time",
- *         VoidPayload.SCHEMA,
- *         TimePayload.SCHEMA,
- *         "Returns the current game time",
- *         (server, params) -> new TimePayload(server.getGameTime())
+ *     .method("echo",
+ *         EchoPayload.SCHEMA,
+ *         EchoPayload.SCHEMA,
+ *         "Echoes a message back to the client",
+ *         (server, params, client) -> params
  *     );
  * }</pre>
  */
@@ -45,6 +42,7 @@ public final class MSMPNamespace {
      * @param name The name of this notification (e.g. {@code "ping"}),
      * resulting in the identifier {@code namespace:notification/name}
      * @param schema The schema describing the payload structure
+     * 
      * @return The registered {@link MSMPNotification}
      */
     public <Payload> MSMPNotification<Payload> notification(
@@ -62,7 +60,8 @@ public final class MSMPNamespace {
      * resulting in the identifier {@code namespace:notification/name}
      * @param schema The schema describing the payload structure
      * @param description A human-readable description of this notification
-     * @return The registered {@link MSMPNotification}
+     * 
+     * @return the registered {@link MSMPNotification}
      */
     public <Payload> MSMPNotification<Payload> notification(
         String name,
@@ -75,24 +74,25 @@ public final class MSMPNamespace {
     /**
      * Creates and registers a new incoming method without a description.
      *
-     * <p>The handler receives the running {@link MinecraftServer} instance and the
-     * request payload from the client, and returns a response payload.</p>
+     * <p>The handler receives the running {@link MinecraftServer} instance, the request
+     * payload from the client, and the {@link net.minecraft.server.jsonrpc.methods.ClientInfo}
+     * of the calling client.</p>
      *
      * @param <Param> The type of the payload received from the client
      * @param <Result> The type of the payload returned to the client
-     * @param name The name of this method (e.g. {@code "get_time"}),
+     * @param name The name of this method (e.g. {@code "echo"}),
      * resulting in the identifier {@code namespace:method/name}
      * @param paramSchema The schema describing the payload received from the client
      * @param resultSchema The schema describing the payload returned to the client
-     * @param handler The function to invoke when this method is called by a client,
-     * receiving the {@link MinecraftServer} and the request payload
+     * @param handler The handler to invoke when this method is called by a client
+     * 
      * @return The registered {@link MSMPMethod}
      */
     public <Param, Result> MSMPMethod<Param, Result> method(
         String name,
         Schema<Param> paramSchema,
         Schema<Result> resultSchema,
-        BiFunction<MinecraftServer, Param, Result> handler
+        MSMPMethodHandler<Param, Result> handler
     ) {
         return new MSMPMethod<>(
             namespace,
@@ -100,25 +100,25 @@ public final class MSMPNamespace {
             paramSchema,
             resultSchema,
             "",
-            (api, params, client) -> handler.apply(server, params)
+            (api, params, client) -> handler.apply(this.server, params, client)
         );
     }
 
     /**
      * Creates and registers a new incoming method with a description.
      *
-     * <p>The handler receives the running {@link MinecraftServer} instance and the
-     * request payload from the client, and returns a response payload.</p>
+     * <p>The handler receives the running {@link MinecraftServer} instance, the request
+     * payload from the client, and the {@link net.minecraft.server.jsonrpc.methods.ClientInfo}
+     * of the calling client.</p>
      *
      * @param <Param> The type of the payload received from the client
      * @param <Result> The type of the payload returned to the client
-     * @param name The name of this method (e.g. {@code "get_time"}),
+     * @param name The name of this method (e.g. {@code "echo"}),
      * resulting in the identifier {@code namespace:method/name}
      * @param paramSchema The schema describing the payload received from the client
      * @param resultSchema The schema describing the payload returned to the client
      * @param description A human-readable description of this method
-     * @param handler The function to invoke when this method is called by a client,
-     * receiving the {@link MinecraftServer} and the request payload
+     * @param handler The handler to invoke when this method is called by a client
      * @return The registered {@link MSMPMethod}
      */
     public <Param, Result> MSMPMethod<Param, Result> method(
@@ -126,7 +126,7 @@ public final class MSMPNamespace {
         Schema<Param> paramSchema,
         Schema<Result> resultSchema,
         String description,
-        BiFunction<MinecraftServer, Param, Result> handler
+        MSMPMethodHandler<Param, Result> handler
     ) {
         return new MSMPMethod<>(
             namespace,
@@ -134,7 +134,7 @@ public final class MSMPNamespace {
             paramSchema,
             resultSchema,
             description,
-            (api, params, client) -> handler.apply(server, params)
+            (api, params, client) -> handler.apply(this.server, params, client)
         );
     }
 }
