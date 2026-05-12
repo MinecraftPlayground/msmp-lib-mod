@@ -6,36 +6,30 @@ import net.minecraft.server.jsonrpc.ManagementServer;
 
 import java.lang.reflect.Field;
 
-
 /**
- * Main entry point for interacting with the MSMP library.
+ * Provides access to the {@link ManagementServer} of a running {@link MinecraftServer}
+ * and allows broadcasting MSMP notifications to all connected clients.
  *
- * <p>Create an instance in the {@code SERVER_STARTED} lifecycle event and discard it
- * in {@code SERVER_STOPPED}. Use {@link #namespace(String)} to register methods and
- * notifications under a custom namespace, and {@link #send(MSMPNotification, Object)}
- * to broadcast notifications to all connected clients.</p>
+ * <p>An instance should be created in the {@code SERVER_STARTED} lifecycle event
+ * and discarded in the {@code SERVER_STOPPED} event:</p>
  *
  * <pre>{@code
  * private static MSMPServer msmp;
- * private static MSMPNotification<PingPayload> ping;
  *
  * ServerLifecycleEvents.SERVER_STARTED.register(server -> {
  *     msmp = new MSMPServer(server);
- *     ping = msmp.namespace("my_mod")
- *         .notification("ping", PingPayload.SCHEMA, "A ping notification");
  * });
  *
  * ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
  *     msmp = null;
  * });
  *
- * // Later:
- * msmp.send(ping, new PingPayload("hello"));
+ * // Broadcast a notification:
+ * msmp.send(MY_NOTIFICATION, new MyPayload("hello"));
  * }</pre>
  */
 public final class MSMPServer {
 
-    private final MinecraftServer server;
     private final ManagementServer managementServer;
 
     /**
@@ -45,23 +39,10 @@ public final class MSMPServer {
      * <p>The {@link ManagementServer} is located via reflection since it is not
      * publicly accessible on {@link MinecraftServer}.</p>
      *
-     * @param server The running {@link MinecraftServer} instance
+     * @param server the running {@link MinecraftServer} instance
      */
     public MSMPServer(MinecraftServer server) {
-        this.server = server;
         this.managementServer = findManagementServer(server);
-    }
-
-    /**
-     * Creates a new {@link MSMPNamespace} for registering methods and notifications
-     * under the given namespace.
-     *
-     * @param namespace The namespace identifier (e.g. {@code "my_mod"})
-     * 
-     * @return A new {@link MSMPNamespace} instance
-     */
-    public MSMPNamespace namespace(String namespace) {
-        return new MSMPNamespace(server, namespace);
     }
 
     /**
@@ -85,9 +66,9 @@ public final class MSMPServer {
      * Finds the {@link ManagementServer} instance held by the given {@link MinecraftServer}
      * by traversing its class hierarchy via reflection.
      *
-     * @param server The running {@link MinecraftServer} instance
+     * @param server the running {@link MinecraftServer} instance
      * 
-     * @return The {@link ManagementServer} instance, or {@code null} if not found
+     * @return the {@link ManagementServer} instance, or {@code null} if not found
      */
     private static ManagementServer findManagementServer(MinecraftServer server) {
         Class<?> clazz = server.getClass();

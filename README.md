@@ -47,19 +47,19 @@ public record PingPayload(String message) {
 
 ### 2. Initialize in your mod
 
-Create a `MsmpServer` instance in the `SERVER_STARTED` lifecycle event.
+Create a `MSMPServer` instance in the `SERVER_STARTED` lifecycle event.
 Use `namespace()` to register methods and notifications, and `send()` to broadcast notifications.
 
 ```java
 public class MyMod implements ModInitializer {
 
-    private static MsmpServer msmp;
-    private static MsmpNotification<PingPayload> ping;
+    private static MSMPServer msmp;
+    private static MSMPNotification<PingPayload> ping;
 
     @Override
     public void onInitialize() {
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-            msmp = new MsmpServer(server);
+            msmp = new MSMPServer(server);
 
             ping = msmp.namespace("my_mod")
                 .notification("ping", PingPayload.SCHEMA, "A ping notification");

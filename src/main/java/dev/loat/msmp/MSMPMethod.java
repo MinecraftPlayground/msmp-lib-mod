@@ -37,7 +37,7 @@ public final class MSMPMethod<Param, Result> {
      *
      * @param namespace The namespace to register this method under (e.g. {@code "my_mod"})
      * @param name The name of this method (e.g. {@code "get_time"}),
-     * resulting in the identifier {@code namespace:method/name}
+     * resulting in the identifier {@code namespace:name}
      * @param paramSchema The schema describing the payload received from the client
      * @param resultSchema The schema describing the payload returned to the client
      * @param description A human-readable description of this method
