@@ -3,6 +3,7 @@ package dev.loat.msmp;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.jsonrpc.api.Schema;
 
+
 /**
  * Represents a custom MSMP namespace under which methods and notifications can be registered.
  *

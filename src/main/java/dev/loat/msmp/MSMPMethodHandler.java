@@ -3,6 +3,7 @@ package dev.loat.msmp;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.jsonrpc.methods.ClientInfo;
 
+
 /**
  * Functional interface for handling incoming MSMP method calls.
  *

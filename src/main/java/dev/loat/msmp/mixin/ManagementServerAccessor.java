@@ -27,8 +27,8 @@ public interface ManagementServerAccessor {
      * {@link ManagementServer}, calling the given {@code consumer} for each currently
      * active {@link Connection}.
      *
-     * @param consumer the action to perform for each active connection,
-     * e.g. sending a notification via {@link Connection#sendNotification}
+     * @param consumer The action to perform for each active connection,
+     * ex. sending a notification via {@link Connection#sendNotification}
      */
     @Invoker("forEachConnection")
     void invokeForEachConnection(Consumer<Connection> consumer);

@@ -6,6 +6,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.jsonrpc.IncomingRpcMethod;
 import net.minecraft.server.jsonrpc.api.Schema;
 
+
 /**
  * Represents an incoming MSMP method that can be called by connected clients.
  *
@@ -24,8 +25,8 @@ import net.minecraft.server.jsonrpc.api.Schema;
  *     );
  * }</pre>
  *
- * @param <Param>  the type of the payload received from the client
- * @param <Result> the type of the payload returned to the client
+ * @param <Param> The type of the payload received from the client
+ * @param <Result> The type of the payload returned to the client
  */
 public final class MSMPMethod<Param, Result> {
 

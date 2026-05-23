@@ -1,10 +1,13 @@
 package dev.loat.msmp;
 
+import dev.loat.msmp.mixin.ConnectionAccessor;
 import dev.loat.msmp.mixin.ManagementServerAccessor;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.jsonrpc.ManagementServer;
+import net.minecraft.server.jsonrpc.methods.ClientInfo;
 
 import java.lang.reflect.Field;
+
 
 /**
  * Provides access to the {@link ManagementServer} of a running {@link MinecraftServer}
@@ -60,6 +63,33 @@ public final class MSMPServer {
             .invokeForEachConnection(conn ->
                 conn.sendNotification(notification.holder(), payload)
             );
+    }
+
+    /**
+     * Sends a notification to a specific connected client identified by their connection ID.
+     *
+     * <p>Does nothing if no {@link ManagementServer} was found during construction,
+     * or if no connection with the given ID exists.</p>
+     *
+     * @param <Payload> The type of the payload
+     * @param connectionId The ID of the target connection, obtained via {@code client.connectionId()}
+     * in a method handler
+     * @param notification The notification to send
+     * @param payload The payload to send with the notification
+     */
+    public <Payload> void sendTo(
+        Integer connectionId,
+        MSMPNotification<Payload> notification,
+        Payload payload
+    ) {
+        if (managementServer == null) return;
+        ((ManagementServerAccessor) managementServer)
+            .invokeForEachConnection(conn -> {
+                ClientInfo clientInfo = ((ConnectionAccessor) conn).getClientInfo();
+                if (clientInfo.connectionId().equals(connectionId)) {
+                    conn.sendNotification(notification.holder(), payload);
+                }
+            });
     }
 
     /**

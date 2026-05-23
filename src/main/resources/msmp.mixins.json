@@ -4,6 +4,7 @@
   "package": "dev.loat.msmp.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "ConnectionAccessor",
     "IncomingRpcMethodBuilderAccessor",
     "ManagementServerAccessor",
     "OutgoingRpcMethodBuilderAccessor"

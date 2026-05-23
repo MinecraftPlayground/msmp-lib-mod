@@ -34,8 +34,8 @@ import org.spongepowered.asm.mixin.gen.Invoker;
  * );
  * }</pre>
  *
- * @param <Param>  the type of the method parameter payload
- * @param <Result> the type of the method result payload
+ * @param <Param> The type of the method parameter payload
+ * @param <Result> The type of the method result payload
  */
 @Mixin(IncomingRpcMethod.IncomingRpcMethodBuilder.class)
 public interface IncomingRpcMethodBuilderAccessor<Params, Result> {
