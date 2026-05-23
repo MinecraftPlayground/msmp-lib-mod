@@ -45,45 +45,52 @@ public record PingPayload(String message) {
 }
 ```
 
-### 2. Initialize in your mod
+### 2. Register methods and notifications
 
-Create a `MSMPServer` instance in the `SERVER_STARTED` lifecycle event.
-Use `namespace()` to register methods and notifications, and `send()` to broadcast notifications.
+Create a `MsmpNamespace` and register methods and notifications in `onInitialize()` —
+before the server starts and the registry is frozen.
+
+Use `attach()` and `detach()` in the server lifecycle events to bind and release
+the server instance for use in method handlers.
 
 ```java
 public class MyMod implements ModInitializer {
 
-    private static MSMPServer msmp;
-    private static MSMPNotification<PingPayload> ping;
+    private static final MsmpNamespace NS = new MsmpNamespace("my_mod");
+
+    // Registered immediately as static fields — before the server starts
+    private static final MsmpNotification<PingPayload> PING =
+        NS.notification("ping", PingPayload.SCHEMA, "A ping notification");
+
+    private static MsmpServer msmp;
 
     @Override
     public void onInitialize() {
+        // Methods are registered here — registry is still open
+        NS.method("echo",
+            EchoPayload.SCHEMA,
+            EchoPayload.SCHEMA,
+            "Echoes a message back to the client",
+            (server, params, client) -> {
+                System.out.println("Called by connection: " + client.connectionId());
+                return params;
+            }
+        );
+
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-            msmp = new MSMPServer(server);
-
-            ping = msmp.namespace("my_mod")
-                .notification("ping", PingPayload.SCHEMA, "A ping notification");
-
-            msmp.namespace("my_mod")
-                .method("echo",
-                    EchoPayload.SCHEMA,
-                    EchoPayload.SCHEMA,
-                    "Echoes a message back to the client",
-                    (server, params, client) -> {
-                        System.out.println("Called by connection: " + client.connectionId());
-                        return params;
-                    }
-                );
+            NS.attach(server); // bind server for use in method handlers
+            msmp = new MsmpServer(server);
         });
 
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+            NS.detach();
             msmp = null;
         });
     }
 
     // Broadcast a notification to all connected clients
     public static void sendPing() {
-        if (msmp != null) msmp.send(ping, new PingPayload("hello"));
+        if (msmp != null) msmp.send(PING, new PingPayload("hello"));
     }
 }
 ```
@@ -98,15 +105,37 @@ The method handler receives three parameters:
 | `params` | `Param` | The payload received from the client |
 | `client` | `ClientInfo` | Info about the calling client, including `connectionId()` |
 
+### Sending notifications
+
+**Broadcast to all connected clients:**
+
+```java
+msmp.send(PING, new PingPayload("hello"));
+```
+
+**Send to a specific client** using the `connectionId` from a method handler:
+
+```java
+NS.method("echo",
+    EchoPayload.SCHEMA,
+    EchoPayload.SCHEMA,
+    "Echoes a message back to the calling client only",
+    (server, params, client) -> {
+        msmp.sendTo(client.connectionId(), PING, new PingPayload("only for you"));
+        return params;
+    }
+);
+```
+
 ### JSON-RPC examples
 
-**Calling a method** (`my_mod:echo`):
+**Calling a method** (`my_mod:method/echo`):
 
 ```json
 {
     "jsonrpc": "2.0",
     "id": 1,
-    "method": "my_mod:echo",
+    "method": "my_mod:method/echo",
     "params": [{
         "message": "hello"
     }]
