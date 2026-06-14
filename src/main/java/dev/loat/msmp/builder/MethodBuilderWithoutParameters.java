@@ -1,41 +1,40 @@
 package dev.loat.msmp.builder;
 
-import dev.loat.msmp.MSMPMethod;
 import dev.loat.msmp.MSMPMethodHandler;
+import dev.loat.msmp.MSMPMethodHandlerWithoutParameters;
+import dev.loat.msmp.MSMPMethod;
 import dev.loat.msmp.MSMPNamespace;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.jsonrpc.api.Schema;
 
-public final class MethodBuilderWithSchemas<Param, Result> {
+public final class MethodBuilderWithoutParameters<Result> {
 
     private final MSMPNamespace msmpNamespace;
     private final String namespace;
     private final String name;
-    private final Schema<Param> paramSchema;
     private final Schema<Result> resultSchema;
     private String description = "";
 
-    MethodBuilderWithSchemas(MSMPNamespace msmpNamespace, String namespace, String name, Schema<Param> paramSchema, Schema<Result> resultSchema) {
+    MethodBuilderWithoutParameters(MSMPNamespace msmpNamespace, String namespace, String name, Schema<Result> resultSchema) {
         this.msmpNamespace = msmpNamespace;
         this.namespace = namespace;
         this.name = name;
-        this.paramSchema = paramSchema;
         this.resultSchema = resultSchema;
     }
 
-    public MethodBuilderWithSchemas<Param, Result> description(String description) {
+    public MethodBuilderWithoutParameters<Result> description(String description) {
         this.description = description;
         return this;
     }
 
-    public MSMPMethod<Param, Result> register(MSMPMethodHandler<Param, Result> handler) {
-        return new MSMPMethod<>(namespace, name, paramSchema, resultSchema, description,
-            (api, params, client) -> {
+    public MSMPMethod<Void, Result> register(MSMPMethodHandlerWithoutParameters<Result> handler) {
+        return new MSMPMethod<>(namespace, name, resultSchema, description,
+            (api, client) -> {
                 MinecraftServer server = msmpNamespace.getServer();
                 if (server == null) throw new IllegalStateException(
                     "MsmpNamespace '%s' has no server attached. Call attach(server) in SERVER_STARTED.".formatted(namespace)
                 );
-                return handler.apply(server, params, client);
+                return handler.apply(server, client);
             });
     }
 }
