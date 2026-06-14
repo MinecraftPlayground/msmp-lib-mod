@@ -8,6 +8,7 @@ public final class MethodBuilder {
     private final MSMPNamespace msmpNamespace;
     private final String namespace;
     private final String name;
+    private String description = "";
 
     public MethodBuilder(MSMPNamespace msmpNamespace, String namespace, String name) {
         this.msmpNamespace = msmpNamespace;
@@ -15,11 +16,16 @@ public final class MethodBuilder {
         this.name = name;
     }
 
+    public MethodBuilder description(String description) {
+        this.description = description;
+        return this;
+    }
+
     public <Param> MethodBuilderWithParameters<Param> requestSchema(Schema<Param> schema) {
-        return new MethodBuilderWithParameters<>(msmpNamespace, namespace, name, schema);
+        return new MethodBuilderWithParameters<>(msmpNamespace, namespace, name, schema, description);
     }
 
     public <Result> MethodBuilderWithoutParameters<Result> responseSchema(Schema<Result> schema) {
-        return new MethodBuilderWithoutParameters<>(msmpNamespace, namespace, name, schema);
+        return new MethodBuilderWithoutParameters<>(msmpNamespace, namespace, name, schema, description);
     }
 }

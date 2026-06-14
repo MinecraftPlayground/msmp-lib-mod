@@ -23,11 +23,20 @@ public final class MethodBuilderWithoutParameters<Result> {
     private final Schema<Result> resultSchema;
     private String description = "";
 
+    MethodBuilderWithoutParameters(MSMPNamespace msmpNamespace, String namespace, String name, Schema<Result> resultSchema, String description) {
+        this.msmpNamespace = msmpNamespace;
+        this.namespace = namespace;
+        this.name = name;
+        this.resultSchema = resultSchema;
+        this.description = description;
+    }
+
     MethodBuilderWithoutParameters(MSMPNamespace msmpNamespace, String namespace, String name, Schema<Result> resultSchema) {
         this.msmpNamespace = msmpNamespace;
         this.namespace = namespace;
         this.name = name;
         this.resultSchema = resultSchema;
+        this.description = "";
     }
 
     /**

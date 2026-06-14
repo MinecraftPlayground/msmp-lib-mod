@@ -25,12 +25,22 @@ public final class MethodBuilderWithSchemas<Param, Result> {
     private final Schema<Result> resultSchema;
     private String description = "";
 
+    MethodBuilderWithSchemas(MSMPNamespace msmpNamespace, String namespace, String name, Schema<Param> paramSchema, Schema<Result> resultSchema, String description) {
+        this.msmpNamespace = msmpNamespace;
+        this.namespace = namespace;
+        this.name = name;
+        this.paramSchema = paramSchema;
+        this.resultSchema = resultSchema;
+        this.description = description;
+    }
+
     MethodBuilderWithSchemas(MSMPNamespace msmpNamespace, String namespace, String name, Schema<Param> paramSchema, Schema<Result> resultSchema) {
         this.msmpNamespace = msmpNamespace;
         this.namespace = namespace;
         this.name = name;
         this.paramSchema = paramSchema;
         this.resultSchema = resultSchema;
+        this.description = "";
     }
 
     /**

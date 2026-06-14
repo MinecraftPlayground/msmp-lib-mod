@@ -10,10 +10,18 @@ public final class NotificationBuilderWithSchema<Payload> {
     private final Schema<Payload> schema;
     private String description = "";
 
+    public NotificationBuilderWithSchema(String namespace, String name, Schema<Payload> schema, String description) {
+        this.namespace = namespace;
+        this.name = name;
+        this.schema = schema;
+        this.description = description;
+    }
+
     public NotificationBuilderWithSchema(String namespace, String name, Schema<Payload> schema) {
         this.namespace = namespace;
         this.name = name;
         this.schema = schema;
+        this.description = "";
     }
 
     public NotificationBuilderWithSchema<Payload> description(String description) {
