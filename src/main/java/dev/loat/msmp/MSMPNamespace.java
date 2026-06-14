@@ -81,7 +81,7 @@ public final class MSMPNamespace {
      * Creates a new method builder for the given name.
      *
      * @param name The name of this method (e.g. {@code "echo"}),
-     * resulting in the identifier {@code namespace:method/name}
+     * resulting in the identifier {@code namespace:name}
      * @return a {@link MethodBuilder} to configure and register the method
      */
     public MethodBuilder method(String name) {
