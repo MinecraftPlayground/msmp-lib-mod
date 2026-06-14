@@ -42,7 +42,7 @@ public final class MSMPServer {
      * <p>The {@link ManagementServer} is located via reflection since it is not
      * publicly accessible on {@link MinecraftServer}.</p>
      *
-     * @param server the running {@link MinecraftServer} instance
+     * @param server The running {@link MinecraftServer} instance
      */
     public MSMPServer(MinecraftServer server) {
         this.managementServer = findManagementServer(server);
@@ -96,7 +96,7 @@ public final class MSMPServer {
      * Finds the {@link ManagementServer} instance held by the given {@link MinecraftServer}
      * by traversing its class hierarchy via reflection.
      *
-     * @param server the running {@link MinecraftServer} instance
+     * @param server The running {@link MinecraftServer} instance
      * 
      * @return the {@link ManagementServer} instance, or {@code null} if not found
      */

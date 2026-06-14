@@ -1,24 +1,31 @@
 package dev.loat.msmp;
 
+import dev.loat.msmp.builder.MethodBuilder;
+import dev.loat.msmp.builder.NotificationBuilder;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.jsonrpc.api.Schema;
-
 
 /**
  * Represents a custom MSMP namespace under which methods and notifications can be registered.
  *
- * <p>Instances are created directly via {@code new MSMPNamespace("my_mod")} and should be
+ * <p>Instances are created directly via {@code new MsmpNamespace("my_mod")} and should be
  * registered in {@code onInitialize()} before the server starts. Use {@link #attach(MinecraftServer)}
  * in {@code SERVER_STARTED} to bind the server instance, and {@link #detach()} in
  * {@code SERVER_STOPPED} to release it.</p>
  *
  * <pre>{@code
- * private static final MSMPNamespace NS = new MSMPNamespace("my_mod");
+ * private static final MsmpNamespace NS = new MsmpNamespace("my_mod");
  *
  * public void onInitialize() {
- *     NS.method("echo", EchoPayload.SCHEMA, EchoPayload.SCHEMA,
- *         (server, params, client) -> params
- *     );
+ *     NS.method("echo")
+ *         .requestSchema(EchoPayload.SCHEMA)
+ *         .responseSchema(EchoPayload.SCHEMA)
+ *         .description("Echoes a message back to the client")
+ *         .register((server, client, params) -> params);
+ *
+ *     NS.notification("ping")
+ *         .responseSchema(PingPayload.SCHEMA)
+ *         .description("A ping notification")
+ *         .register();
  *
  *     ServerLifecycleEvents.SERVER_STARTED.register(server -> NS.attach(server));
  *     ServerLifecycleEvents.SERVER_STOPPED.register(server -> NS.detach());
@@ -61,104 +68,34 @@ public final class MSMPNamespace {
     }
 
     /**
-     * Creates and registers a new outgoing notification without a description.
+     * Returns the currently bound {@link MinecraftServer} instance.
+     * Package-private — used by builder classes to resolve the server lazily.
      *
-     * @param <Payload> The type of the payload sent with this notification
+     * @return the bound server, or {@code null} if not attached
+     */
+    public MinecraftServer getServer() {
+        return server;
+    }
+
+    /**
+     * Creates a new method builder for the given name.
+     *
+     * @param name The name of this method (e.g. {@code "echo"}),
+     * resulting in the identifier {@code namespace:method/name}
+     * @return a {@link MethodBuilder} to configure and register the method
+     */
+    public MethodBuilder method(String name) {
+        return new MethodBuilder(this, namespace, name);
+    }
+
+    /**
+     * Creates a new notification builder for the given name.
+     *
      * @param name The name of this notification (e.g. {@code "ping"}),
      * resulting in the identifier {@code namespace:notification/name}
-     * @param schema The schema describing the payload structure
-     * 
-     * @return The registered {@link MSMPNotification}
+     * @return a {@link NotificationBuilder} to configure and register the notification
      */
-    public <Payload> MSMPNotification<Payload> notification(
-        String name,
-        Schema<Payload> schema
-    ) {
-        return new MSMPNotification<>(namespace, name, schema, "");
-    }
-
-    /**
-     * Creates and registers a new outgoing notification with a description.
-     *
-     * @param <Payload> The type of the payload sent with this notification
-     * @param name The name of this notification (e.g. {@code "ping"}),
-     * resulting in the identifier {@code namespace:notification/name}
-     * @param schema The schema describing the payload structure
-     * @param description A human-readable description of this notification
-     * 
-     * @return The registered {@link MSMPNotification}
-     */
-    public <Payload> MSMPNotification<Payload> notification(
-        String name,
-        Schema<Payload> schema,
-        String description
-    ) {
-        return new MSMPNotification<>(namespace, name, schema, description);
-    }
-
-    /**
-     * Creates and registers a new incoming method without a description.
-     *
-     * <p>The handler is invoked when a client calls this method. The {@link MinecraftServer}
-     * is resolved lazily at call time — {@link #attach(MinecraftServer)} must have been
-     * called before any client can invoke this method.</p>
-     *
-     * @param <Param> The type of the payload received from the client
-     * @param <Result> The type of the payload returned to the client
-     * @param name The name of this method (e.g. {@code "echo"}),
-     * resulting in the identifier {@code namespace:name}
-     * @param paramSchema The schema describing the payload received from the client
-     * @param resultSchema The schema describing the payload returned to the client
-     * @param handler The handler to invoke when this method is called by a client
-     * 
-     * @return The registered {@link MSMPMethod}
-     */
-    public <Param, Result> MSMPMethod<Param, Result> method(
-        String name,
-        Schema<Param> paramSchema,
-        Schema<Result> resultSchema,
-        MSMPMethodHandler<Param, Result> handler
-    ) {
-        return new MSMPMethod<>(namespace, name, paramSchema, resultSchema, "",
-            (api, params, client) -> {
-                if (server == null) throw new IllegalStateException(
-                    "MSMPNamespace '%s' has no server attached. Call attach(server) in SERVER_STARTED.".formatted(namespace)
-                );
-                return handler.apply(server, params, client);
-            });
-    }
-
-    /**
-     * Creates and registers a new incoming method with a description.
-     *
-     * <p>The handler is invoked when a client calls this method. The {@link MinecraftServer}
-     * is resolved lazily at call time — {@link #attach(MinecraftServer)} must have been
-     * called before any client can invoke this method.</p>
-     *
-     * @param <Param> The type of the payload received from the client
-     * @param <Result> The type of the payload returned to the client
-     * @param name The name of this method (e.g. {@code "echo"}),
-     * resulting in the identifier {@code namespace:name}
-     * @param paramSchema The schema describing the payload received from the client
-     * @param resultSchema The schema describing the payload returned to the client
-     * @param description A human-readable description of this method
-     * @param handler The handler to invoke when this method is called by a client
-     * 
-     * @return The registered {@link MSMPMethod}
-     */
-    public <Param, Result> MSMPMethod<Param, Result> method(
-        String name,
-        Schema<Param> paramSchema,
-        Schema<Result> resultSchema,
-        String description,
-        MSMPMethodHandler<Param, Result> handler
-    ) {
-        return new MSMPMethod<>(namespace, name, paramSchema, resultSchema, description,
-            (api, params, client) -> {
-                if (server == null) throw new IllegalStateException(
-                    "MSMPNamespace '%s' has no server attached. Call attach(server) in SERVER_STARTED.".formatted(namespace)
-                );
-                return handler.apply(server, params, client);
-            });
+    public NotificationBuilder notification(String name) {
+        return new NotificationBuilder(namespace, name);
     }
 }
