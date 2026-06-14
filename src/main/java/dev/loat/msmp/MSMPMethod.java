@@ -9,8 +9,8 @@ import net.minecraft.server.jsonrpc.api.Schema;
 /**
  * Represents an incoming MSMP method that can be called by connected clients.
  *
- * <p>Instances are created via {@link dev.loat.msmp.builder.MethodBuilderWithSchemas#register(MsmpMethodHandler)}
- * or {@link dev.loat.msmp.builder.MethodBuilderWithSchemas#register(MsmpParameterlessMethodHandler)}
+ * <p>Instances are created via {@link dev.loat.msmp.builder.MethodBuilderWithSchemas#register(MSMPMethodHandler)}
+ * or {@link dev.loat.msmp.builder.MethodBuilderWithoutParameters#register(MSMPMethodHandlerWithoutParameters)}
  * and are registered in the MSMP registry immediately upon creation.</p>
  *
  * <pre>{@code
@@ -19,7 +19,7 @@ import net.minecraft.server.jsonrpc.api.Schema;
  *     .requestSchema(EchoPayload.SCHEMA)
  *     .responseSchema(EchoPayload.SCHEMA)
  *     .description("Echoes a message back to the client")
- *     .register((server, params, client) -> params);
+ *     .register((server, client, params) -> params);
  *
  * // Without request payload:
  * NS.method("get_time")
@@ -28,67 +28,61 @@ import net.minecraft.server.jsonrpc.api.Schema;
  *     .register((server, client) -> new TimePayload(server.getGameTime()));
  * }</pre>
  *
- * @param <Param>  the type of the payload received from the client, or {@link Void} for parameterless methods
- * @param <Result> the type of the payload returned to the client
+ * @param <Param> The type of the payload received from the client, or {@link Void} for methods without parameters
+ * @param <Result> The type of the payload returned to the client
  */
 public final class MSMPMethod<Param, Result> {
 
     /**
-     * Creates and registers a new incoming method with a request payload.
-     * Package-private — use {@link dev.loat.msmp.builder.MethodBuilderWithSchemas#register(MsmpMethodHandler)}.
+     * Creates and registers a new incoming method.
      *
-     * @param namespace    the namespace to register this method under
-     * @param name         the name of this method
-     * @param paramSchema  the schema describing the payload received from the client
-     * @param resultSchema the schema describing the payload returned to the client
-     * @param description  a human-readable description of this method
-     * @param handler      the handler to invoke when this method is called by a client
+     * @param namespace The namespace to register this method under
+     * @param name The name of this method
+     * @param paramSchema The schema describing the payload received from the client
+     * @param resultSchema The schema describing the payload returned to the client
+     * @param description A human-readable description of this method
+     * @param rpcFunction The raw RPC function to invoke when this method is called
      */
     @SuppressWarnings("unchecked")
-    MSMPMethod(
+    public MSMPMethod(
         String namespace,
         String name,
         Schema<Param> paramSchema,
         Schema<Result> resultSchema,
         String description,
-        MSMPMethodHandler<Param, Result> handler
+        IncomingRpcMethod.RpcMethodFunction<Param, Result> rpcFunction
     ) {
         Identifier id = Identifier.fromNamespaceAndPath(namespace, name);
         ((IncomingRpcMethodBuilderAccessor<Param, Result>)
-            IncomingRpcMethod.<Param, Result>method(
-                (api, params, client) -> handler.apply(null, params, client)
-            )
-            .description(description)
-            .param(name, paramSchema)
-            .response(name, resultSchema)
+            IncomingRpcMethod.<Param, Result>method(rpcFunction)
+                .description(description)
+                .param(name, paramSchema)
+                .response(name, resultSchema)
         ).invokeRegister(BuiltInRegistries.INCOMING_RPC_METHOD, id);
     }
 
     /**
-     * Creates and registers a new parameterless incoming method.
-     * Package-private — use {@link dev.loat.msmp.builder.MethodBuilderWithSchemas#register(MsmpParameterlessMethodHandler)}.
+     * Creates and registers a new incoming method without parameters.
      *
-     * @param namespace    the namespace to register this method under
-     * @param name         the name of this method
-     * @param resultSchema the schema describing the payload returned to the client
-     * @param description  a human-readable description of this method
-     * @param handler      the parameterless handler to invoke when this method is called by a client
+     * @param namespace The namespace to register this method under
+     * @param name The name of this method
+     * @param resultSchema The schema describing the payload returned to the client
+     * @param description A human-readable description of this method
+     * @param rpcFunction The raw RPC function without parameters to invoke when this method is called
      */
     @SuppressWarnings("unchecked")
-    MSMPMethod(
+    public MSMPMethod(
         String namespace,
         String name,
         Schema<Result> resultSchema,
         String description,
-        MSMPMethodHandlerWithoutParameters<Result> handler
+        IncomingRpcMethod.ParameterlessRpcMethodFunction<Result> rpcFunction
     ) {
         Identifier id = Identifier.fromNamespaceAndPath(namespace, name);
         ((IncomingRpcMethodBuilderAccessor<Void, Result>)
-            IncomingRpcMethod.<Result>method(
-                (api, client) -> handler.apply(null, client)
-            )
-            .description(description)
-            .response(name, resultSchema)
+            IncomingRpcMethod.<Result>method(rpcFunction)
+                .description(description)
+                .response(name, resultSchema)
         ).invokeRegister(BuiltInRegistries.INCOMING_RPC_METHOD, id);
     }
 }

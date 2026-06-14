@@ -20,7 +20,7 @@ import net.minecraft.server.MinecraftServer;
  *         .requestSchema(EchoPayload.SCHEMA)
  *         .responseSchema(EchoPayload.SCHEMA)
  *         .description("Echoes a message back to the client")
- *         .register((server, params, client) -> params);
+ *         .register((server, client, params) -> params);
  *
  *     NS.notification("ping")
  *         .responseSchema(PingPayload.SCHEMA)
@@ -40,7 +40,7 @@ public final class MSMPNamespace {
     /**
      * Creates a new namespace with the given identifier.
      *
-     * @param namespace the namespace identifier (e.g. {@code "my_mod"})
+     * @param namespace The namespace identifier (e.g. {@code "my_mod"})
      */
     public MSMPNamespace(String namespace) {
         this.namespace = namespace;
@@ -52,7 +52,7 @@ public final class MSMPNamespace {
      * <p>Should be called in the {@code SERVER_STARTED} lifecycle event.
      * Required for method handlers to access the server instance.</p>
      *
-     * @param server the running {@link MinecraftServer} instance
+     * @param server The running {@link MinecraftServer} instance
      */
     public void attach(MinecraftServer server) {
         this.server = server;
@@ -73,15 +73,15 @@ public final class MSMPNamespace {
      *
      * @return the bound server, or {@code null} if not attached
      */
-    MinecraftServer getServer() {
+    public MinecraftServer getServer() {
         return server;
     }
 
     /**
      * Creates a new method builder for the given name.
      *
-     * @param name the name of this method (e.g. {@code "echo"}),
-     *             resulting in the identifier {@code namespace:method/name}
+     * @param name The name of this method (e.g. {@code "echo"}),
+     * resulting in the identifier {@code namespace:method/name}
      * @return a {@link MethodBuilder} to configure and register the method
      */
     public MethodBuilder method(String name) {
@@ -91,8 +91,8 @@ public final class MSMPNamespace {
     /**
      * Creates a new notification builder for the given name.
      *
-     * @param name the name of this notification (e.g. {@code "ping"}),
-     *             resulting in the identifier {@code namespace:notification/name}
+     * @param name The name of this notification (e.g. {@code "ping"}),
+     * resulting in the identifier {@code namespace:notification/name}
      * @return a {@link NotificationBuilder} to configure and register the notification
      */
     public NotificationBuilder notification(String name) {

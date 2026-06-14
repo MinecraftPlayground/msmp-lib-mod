@@ -20,10 +20,10 @@ public interface MSMPMethodHandler<Param, Result> {
      * Handles an incoming method call from a connected client.
      *
      * @param server The running {@link MinecraftServer} instance
-     * @param params The payload received from the client
      * @param client The {@link ClientInfo} of the calling client,
      * providing access to the client's {@link ClientInfo#connectionId()}
+     * @param params The payload received from the client
      * @return The payload to return to the client
      */
-    Result apply(MinecraftServer server, Param params, ClientInfo client);
+    Result apply(MinecraftServer server, ClientInfo client, Param params);
 }

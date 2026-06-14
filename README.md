@@ -34,20 +34,20 @@ Payloads are simple records that describe the data sent and received over MSMP.
 Each payload needs a `Codec` for serialization and a `Schema` for MSMP discovery.
 
 ```java
-public record PingPayload(String message) {
+public record EchoPayload(String message) {
 
-    public static final Codec<PingPayload> CODEC = RecordCodecBuilder.create(i -> i.group(
-        Codec.STRING.fieldOf("message").forGetter(PingPayload::message)
-    ).apply(i, PingPayload::new));
+    public static final Codec<EchoPayload> CODEC = RecordCodecBuilder.create(i -> i.group(
+        Codec.STRING.fieldOf("message").forGetter(EchoPayload::message)
+    ).apply(i, EchoPayload::new));
 
-    public static final Schema<PingPayload> SCHEMA = Schema.record(CODEC)
+    public static final Schema<EchoPayload> SCHEMA = Schema.record(CODEC)
         .withField("message", Schema.STRING_SCHEMA);
 }
 ```
 
 ### 2. Register methods and notifications
 
-Create a `MsmpNamespace` and register methods and notifications in `onInitialize()` —
+Create a `MSMPNamespace` and register methods and notifications in `onInitialize()` -
 before the server starts and the registry is frozen.
 
 Use `attach()` and `detach()` in the server lifecycle events to bind and release
@@ -56,26 +56,34 @@ the server instance for use in method handlers.
 ```java
 public class MyMod implements ModInitializer {
 
-    private static final MsmpNamespace NS = new MsmpNamespace("my_mod");
+    private static final MSMPNamespace NS = new MSMPNamespace("my_mod");
 
-    // Registered immediately as static fields — before the server starts
-    private static final MsmpNotification<PingPayload> PING =
-        NS.notification("ping", PingPayload.SCHEMA, "A ping notification");
+    // Registered as a field - before the server starts
+    private static final MSMPNotification<EchoPayload> PING =
+        NS.notification("ping")
+            .responseSchema(EchoPayload.SCHEMA)
+            .description("A ping notification")
+            .register();
 
-    private static MsmpServer msmp;
+    private static MSMPServer msmp;
 
     @Override
     public void onInitialize() {
-        // Methods are registered here — registry is still open
-        NS.method("echo",
-            EchoPayload.SCHEMA,
-            EchoPayload.SCHEMA,
-            "Echoes a message back to the client",
-            (server, params, client) -> {
+        // Register a method that receives a parameter
+        NS.method("echo")
+            .requestSchema(EchoPayload.SCHEMA)
+            .responseSchema(EchoPayload.SCHEMA)
+            .description("Echoes a message back to the client")
+            .register((server, client, params) -> {
                 System.out.println("Called by connection: " + client.connectionId());
                 return params;
-            }
-        );
+            });
+
+        // Register a method without parameters
+        NS.method("get_time")
+            .responseSchema(TimePayload.SCHEMA)
+            .description("Returns the current game time")
+            .register((server, client) -> new TimePayload(server.getGameTime()));
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             NS.attach(server); // bind server for use in method handlers
@@ -90,52 +98,84 @@ public class MyMod implements ModInitializer {
 
     // Broadcast a notification to all connected clients
     public static void sendPing() {
-        if (msmp != null) msmp.send(PING, new PingPayload("hello"));
+        if (msmp != null) msmp.send(PING, new EchoPayload("hello"));
     }
 }
 ```
 
+### Method types
+
+**Methods with request and response payload:**
+
+```java
+NS.method("echo")
+    .requestSchema(EchoPayload.SCHEMA)
+    .responseSchema(EchoPayload.SCHEMA)
+    .description("Echoes a message back to the client")
+    .register((server, client, params) -> {
+        System.out.println("Received: " + params.message());
+        return params;
+    });
+```
+
+**Parameterless methods (no request payload):**
+
+```java
+NS.method("get_time")
+    .responseSchema(TimePayload.SCHEMA)
+    .description("Returns the current game time")
+    .register((server, client) -> new TimePayload(server.getGameTime()));
+```
+
 ### Handler parameters
 
-The method handler receives three parameters:
+The method handler signature depends on whether the method expects parameters:
 
-| Parameter | Type | Description |
-|---|---|---|
-| `server` | `MinecraftServer` | The running Minecraft server instance |
-| `params` | `Param` | The payload received from the client |
-| `client` | `ClientInfo` | Info about the calling client, including `connectionId()` |
+**With parameters:** `(server, client, params) -> result`
+
+| Parameter | Type              | Description                           |
+|-----------|-------------------|:--------------------------------------|
+| `server`  | `MinecraftServer` | The running Minecraft server instance |
+| `client`  | `ClientInfo`      | Info about the calling client         |
+| `params`  | `Param`           | The payload received from the client  |
+
+**Without parameters:** `(server, client) -> result`
+
+| Parameter | Type              | Description                           |
+|-----------|-------------------|:--------------------------------------|
+| `server`  | `MinecraftServer` | The running Minecraft server instance |
+| `client`  | `ClientInfo`      | Info about the calling client         |
 
 ### Sending notifications
 
 **Broadcast to all connected clients:**
 
 ```java
-msmp.send(PING, new PingPayload("hello"));
+msmp.send(PING, new EchoPayload("hello"));
 ```
 
 **Send to a specific client** using the `connectionId` from a method handler:
 
 ```java
-NS.method("echo",
-    EchoPayload.SCHEMA,
-    EchoPayload.SCHEMA,
-    "Echoes a message back to the calling client only",
-    (server, params, client) -> {
-        msmp.sendTo(client.connectionId(), PING, new PingPayload("only for you"));
-        return params;
-    }
-);
+NS.method("notify_client")
+    .requestSchema(RequestPayload.SCHEMA)
+    .responseSchema(ResponsePayload.SCHEMA)
+    .description("Sends a notification only to the calling client")
+    .register((server, client, params) -> {
+        msmp.sendTo(client.connectionId(), PING, new EchoPayload("only for you"));
+        return new ResponsePayload("sent");
+    });
 ```
 
 ### JSON-RPC examples
 
-**Calling a method** (`my_mod:method/echo`):
+**Calling a method** (`my_mod:echo`):
 
 ```json
 {
     "jsonrpc": "2.0",
     "id": 1,
-    "method": "my_mod:method/echo",
+    "method": "my_mod:echo",
     "params": [{
         "message": "hello"
     }]
