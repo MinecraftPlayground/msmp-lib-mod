@@ -14,7 +14,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.YOUR_USERNAME:msmp-lib:VERSION")
+    implementation("com.github.MinecraftPlayground:msmp-lib-mod:VERSION")
 }
 ```
 
